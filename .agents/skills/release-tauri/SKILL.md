@@ -21,7 +21,7 @@ This skill cuts Tauri-edition releases only. Tauri stays on version lane `0.6.x`
 ### 1. Determine New Version
 
 - Read the current version from `package.json` and the latest git tag.
-- Default bump type is **patch** (e.g. 0.1.0 → 0.1.1). The user may override with major or minor.
+- Tauri is frozen on the `0.6.x` lane, so only **patch** bumps are allowed (e.g. `0.6.27` -> `0.6.28`). Do NOT do a minor or major bump: from `0.6.x` that produces `0.7.0`, which collides with Swift's lane and can hijack GitHub Latest. (Swift releases use the release-swift skill on the `swift` branch.)
 - Show the proposed new version and **confirm with the user** before proceeding.
 
 ### 2. Generate Changelog
@@ -100,12 +100,17 @@ gh release view v{new_version} --json isDraft,isPrerelease,assets \
 
 Require `isDraft=false`, `isPrerelease=false`, and assets including `latest.json` and a `.sig`. If it is still a draft with complete assets: `gh release edit v{new_version} --draft=false`.
 
-Before deleting any duplicate draft, reconcile it: compare its body and assets against the published release and migrate anything the published one is missing. (Release notes were lost this way for v0.6.1 and v0.6.8 - the published releases had blank bodies while the drafts held the changelog.) Migrate notes with `gh release edit v{new_version} --notes-file <file>`. Only then delete the duplicate draft:
+Before deleting any duplicate draft, reconcile it: compare its body and assets against the published release and migrate anything the published one is missing. (Release notes were lost this way for v0.6.1 and v0.6.8 - the published releases had blank bodies while the drafts held the changelog.) Migrate notes with `gh release edit v{new_version} --notes-file <file>`. Only then delete the duplicate draft. Guard the delete so it can NEVER remove the sole release for a tag - it only runs once a separate PUBLISHED (non-draft) release for that tag already exists:
 
 ```bash
-gh api repos/{owner}/{repo}/releases --paginate \
-  --jq '.[] | select(.draft and .tag_name=="v{new_version}") | .id' \
-  | xargs -I{} gh api -X DELETE repos/{owner}/{repo}/releases/{}
+tag="v{new_version}"
+if [ "$(gh release view "$tag" --json isDraft --jq '.isDraft')" = "false" ]; then
+  gh api repos/{owner}/{repo}/releases --paginate \
+    --jq '.[] | select(.draft and .tag_name=="'"$tag"'") | .id' \
+    | xargs -I{} gh api -X DELETE repos/{owner}/{repo}/releases/{}
+else
+  echo "No published release for $tag yet - publish it first; do NOT delete the draft."
+fi
 ```
 
 Definition of done: exactly one published, non-draft release for the tag, with updater assets AND the release notes present.
