@@ -214,15 +214,17 @@ enum CodexUsageMapper {
     }
 
     /// The dictionary the count and expiry list are read from: the dedicated endpoint's body when it
-    /// returned a usable payload (2xx, parseable, carrying `available_count`), otherwise the usage body's
-    /// embedded object.
+    /// returned a usable payload (2xx, parseable, carrying a *numeric* `available_count`), otherwise the
+    /// usage body's embedded object. The count is validated with `ProviderParse.number` rather than a bare
+    /// nil-check: a JSON `null` decodes to `NSNull` (non-nil), so a bare check would select a dedicated
+    /// body whose count is unusable and drop the row instead of falling back to the usage-body count.
     private static func resetCreditsSource(
         body: [String: Any],
         resetCredits: HTTPResponse?
     ) -> [String: Any]? {
         if let resetCredits, (200..<300).contains(resetCredits.statusCode),
            let dedicated = ProviderParse.jsonObject(resetCredits.body),
-           dedicated["available_count"] != nil {
+           ProviderParse.number(dedicated["available_count"]) != nil {
             return dedicated
         }
         return body["rate_limit_reset_credits"] as? [String: Any]

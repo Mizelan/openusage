@@ -223,6 +223,25 @@ final class CodexUsageMapperTests: XCTestCase {
         XCTAssertTrue(expiriesAt.isEmpty)
     }
 
+    func testDedicatedNullCountFallsBackToUsageBodyCount() throws {
+        // A 2xx dedicated payload whose `available_count` is JSON null (NSNull, which is non-nil) must NOT
+        // be selected as the source — doing so would drop the whole row. It falls back to the usage body's
+        // valid embedded count instead. (Regression for the bot-flagged NSNull nil-check.)
+        let usage = HTTPResponse(statusCode: 200, headers: [:],
+                                 body: Data(#"{ "rate_limit_reset_credits": { "available_count": 2 } }"#.utf8))
+        let resetCredits = HTTPResponse(statusCode: 200, headers: [:],
+                                        body: Data(#"{ "available_count": null }"#.utf8))
+
+        let mapped = try CodexUsageMapper.mapUsageResponse(
+            usage,
+            resetCredits: resetCredits,
+            now: Date(timeIntervalSince1970: 1_800_000_000)
+        )
+
+        XCTAssertEqual(values(mapped.lines, "Rate Limit Resets"),
+                       [MetricValue(number: 2, kind: .count, label: "available")])
+    }
+
     func testDedicatedNon2xxFallsBackToUsageBodyCount() throws {
         // A non-2xx dedicated response is ignored (treated as unavailable), so the count falls back to
         // the usage body — never a dropped row just because the extra endpoint erred.
