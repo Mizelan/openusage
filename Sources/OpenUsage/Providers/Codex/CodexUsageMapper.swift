@@ -230,13 +230,19 @@ enum CodexUsageMapper {
         return body["rate_limit_reset_credits"] as? [String: Any]
     }
 
-    /// Every `expires_at` among the still-available credits, sorted soonest-first. Only
-    /// `status == "available"` credits count (a spent/expired credit's expiry is irrelevant to the
-    /// "N available" the row shows). `expires_at` is parsed as an ISO-8601 string or an epoch number.
+    /// Every still-available credit's `expires_at`, sorted soonest-first. `status` is optional upstream,
+    /// so a credit is kept when it's explicitly "available" *or* carries no status at all — only an
+    /// explicitly non-available state (e.g. "consumed"/"expired") is dropped. Filtering hard on
+    /// `== "available"` would otherwise blank the whole expiry list (tooltip + 24h warning) for responses
+    /// that omit status, even though `available_count` reported credits. `expires_at` is parsed as an
+    /// ISO-8601 string or an epoch number.
     private static func availableExpiries(in value: Any?) -> [Date] {
         guard let credits = value as? [[String: Any]] else { return [] }
         return credits
-            .filter { ($0["status"] as? String) == "available" }
+            .filter { credit in
+                guard let status = credit["status"] as? String else { return true }
+                return status == "available"
+            }
             .compactMap { parseExpiry($0["expires_at"]) }
             .sorted()
     }

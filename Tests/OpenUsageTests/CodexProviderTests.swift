@@ -204,6 +204,39 @@ final class CodexUsageMapperTests: XCTestCase {
         ])
     }
 
+    func testExpiriesPreservedWhenStatusOmitted() throws {
+        // `status` is optional upstream — a credit with `expires_at` but no `status` must still count
+        // toward the expiry list (otherwise the tooltip and the 24h warning vanish for that response
+        // shape). An explicitly non-available credit is still dropped. (Regression for the Codex-flagged
+        // "preserve expiries when status is omitted".)
+        let usage = HTTPResponse(statusCode: 200, headers: [:], body: Data("{}".utf8))
+        let resetCredits = HTTPResponse(statusCode: 200, headers: [:], body: Data("""
+        {
+          "available_count": 2,
+          "credits": [
+            { "expires_at": "2026-02-20T19:00:00.000Z" },
+            { "expires_at": "2026-02-20T17:30:00.000Z" },
+            { "status": "consumed", "expires_at": "2026-02-20T16:10:00.000Z" }
+          ]
+        }
+        """.utf8))
+
+        let mapped = try CodexUsageMapper.mapUsageResponse(
+            usage,
+            resetCredits: resetCredits,
+            now: OpenUsageISO8601.date(from: "2026-02-20T16:00:00.000Z")!
+        )
+
+        guard case .values(_, _, _, let expiriesAt) = mapped.lines.first(where: { $0.label == "Rate Limit Resets" }) else {
+            return XCTFail("expected a Rate Limit Resets values line")
+        }
+        // The two status-less credits are kept (sorted); the "consumed" one is dropped.
+        XCTAssertEqual(expiriesAt, [
+            OpenUsageISO8601.date(from: "2026-02-20T17:30:00.000Z")!,
+            OpenUsageISO8601.date(from: "2026-02-20T19:00:00.000Z")!
+        ])
+    }
+
     func testFallsBackToUsageBodyCountWhenDedicatedFetchUnavailable() throws {
         // No dedicated response (the fetch failed): the count falls back to the usage body's embedded
         // object, and with no expiry list `expiriesAt` is empty.
