@@ -90,23 +90,23 @@ struct WidgetGroupedListView: View {
         let isExpanded = layout.isProviderExpanded(providerID)
         let alwaysRows = resolvedRows(group.alwaysShownWidgets)
         let expandedRows = resolvedRows(group.expandedWidgets)
-        // The condensing rule only sees rows currently on screen, so a hidden expanded row never pulls a
-        // visible one up.
-        let condensedIDs = condensedTextRowIDs(isExpanded ? alwaysRows + expandedRows : alwaysRows)
+        // The caret is a boundary between primary and expanded rows, so text-row condensing should not
+        // bridge across it. Each side tightens only against rows on the same side of the separator.
+        let condensedIDs = visibleCondensedTextRowIDs(alwaysRows: alwaysRows, expandedRows: isExpanded ? expandedRows : [])
         // Same card builder the lifted preview uses, so the floating chip can't drift from the live card.
         return DashboardMetricCard {
             ForEach(alwaysRows) { entry in
                 row(entry.descriptor, data: entry.data, in: providerID,
                     condensedTop: condensedIDs.contains(entry.descriptor.id))
             }
+            if group.hasExpandedMetrics {
+                expandToggle(providerID: providerID, isExpanded: isExpanded)
+            }
             if isExpanded {
                 ForEach(expandedRows) { entry in
                     row(entry.descriptor, data: entry.data, in: providerID,
                         condensedTop: condensedIDs.contains(entry.descriptor.id))
                 }
-            }
-            if group.hasExpandedMetrics {
-                expandToggle(providerID: providerID, isExpanded: isExpanded)
             }
         }
     }
@@ -127,14 +127,20 @@ struct WidgetGroupedListView: View {
             }
         } label: {
             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
+                .frame(width: 14, height: 14)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 3)
-                .contentShape(Rectangle())
+                .padding(.vertical, 5)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isExpanded ? "Show less" : "Show more")
+    }
+
+    private func visibleCondensedTextRowIDs(alwaysRows: [ResolvedRow], expandedRows: [ResolvedRow]) -> Set<String> {
+        condensedTextRowIDs(alwaysRows).union(condensedTextRowIDs(expandedRows))
     }
 
     /// Neighbor-aware rule: IDs of text-only rows sitting directly under another text-only row.

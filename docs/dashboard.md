@@ -2,7 +2,7 @@
 
 The popover that opens from the menu bar icon. Providers are sections; each section shows the metrics you've enabled.
 
-Each provider card leads with its **always-shown** metrics. Any metrics you've moved below the **Shown on Expand** line are tucked away behind a caret at the bottom of the card — click it to reveal them, click again to collapse. Open cards stay open across popover closes and app restarts. A provider with nothing tucked away shows no caret.
+Each provider card leads with its **always-shown** metrics. Any metrics you've moved below the **Shown on Expand** line are tucked away behind the in-card caret — click it to reveal them below the caret, click again to collapse. Open cards stay open across popover closes and app restarts. A provider with nothing tucked away shows no caret.
 
 ## Rows
 
