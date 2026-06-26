@@ -155,3 +155,12 @@ extension HTTPClientError: CategorizedError {
         }
     }
 }
+
+extension AntigravityError: CategorizedError {
+    var errorCategory: ErrorCategory {
+        switch self {
+        case .notSignedIn: .notLoggedIn
+        case .authExpired: .authExpired
+        }
+    }
+}
