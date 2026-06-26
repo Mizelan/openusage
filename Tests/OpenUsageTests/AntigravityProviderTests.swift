@@ -350,6 +350,28 @@ final class AntigravityProviderTests: XCTestCase {
     }
 
     @MainActor
+    func testAuthFailureThenThrottledRefreshReportsUnavailable() async {
+        // A usable token 401s (sawAuthFailure), then the OAuth refresh hits 503. An expired access token
+        // is normal and the refresh token may be fine, so this is a transient outage (.network), not
+        // authExpired.
+        let routing = RoutingHTTPClient { request in
+            if request.url.host == "oauth2.googleapis.com" {
+                return HTTPResponse(statusCode: 503, headers: [:], body: Data())
+            }
+            return HTTPResponse(statusCode: 401, headers: [:], body: Data())
+        }
+        let inner = #"{"token":{"access_token":"ya29.kc","refresh_token":"1//r","expiry":"2099-01-01T00:00:00Z"}}"#
+        let wrapped = "go-keyring-base64:" + Data(inner.utf8).base64EncodedString()
+        let provider = AntigravityProvider(
+            authStore: AntigravityAuthStore(keychain: FakeKeychain(wrapped), files: FakeFiles()),
+            usageClient: AntigravityUsageClient(lsHTTP: routing, http: routing),
+            discovery: LanguageServerDiscovery(processRunner: EmptyProcessRunner())
+        )
+        let snapshot = await provider.refresh()
+        XCTAssertEqual(snapshot.errorCategory, .network)
+    }
+
+    @MainActor
     func testRateLimitedRefreshReportsUnavailable() async {
         // Access token expired; refresh hits 429 (rate limited). Transient, not a revoked token — so
         // .network, not .authExpired.

@@ -152,11 +152,15 @@ final class AntigravityProvider: ProviderRuntime {
                 }
             // The refresh token itself is dead (revoked / expired) — that's expired auth, not an outage.
             case .authFailed: throw AntigravityError.authExpired
-            // Transient refresh failure — fall through to the outcome decision below.
-            case .unavailable: break
+            // Refresh was only transiently unavailable (throttled / 5xx / network). The refresh token may
+            // still be valid, so report a transient outage — even if a token 401'd, an expired access
+            // token is normal and isn't evidence the sign-in is dead.
+            case .unavailable: throw AntigravityError.unavailable
             }
         }
 
+        // Reached only when no refresh was attempted (no refresh token): a rejected token with no way to
+        // refresh is genuinely expired auth.
         if sawAuthFailure { throw AntigravityError.authExpired }
         // Signed in but every endpoint was unreachable — report a transient failure, not "not signed in".
         if hasCredentials { throw AntigravityError.unavailable }
