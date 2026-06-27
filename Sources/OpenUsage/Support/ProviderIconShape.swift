@@ -93,6 +93,10 @@ enum ProviderMarks {
         case "codex": return "circle.hexagongrid"
         case "cursor": return "cube"
         case "grok": return "bolt.fill"
+        case "zai": return "z"
+        case "minimax-com": return "m.square"
+        case "minimax-io": return "m.circle"
+        case "minimax-platform": return "square.grid.2x2"
         default: return "app.dashed"
         }
     }
