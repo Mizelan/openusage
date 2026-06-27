@@ -87,6 +87,11 @@ The `BrowserCookieStore` infrastructure (added in commit `944d622`) handles step
 correctly for any future provider that wants to replay Chrome session cookies. It's a real
 contribution; it stays.
 
+**For the exact browser / DevTools / redaction procedure, see
+`minimax-verification-procedure.md` — it walks through capturing a request step by step,
+including what to redact, how to format the capture file, and a self-verification checklist
+to confirm the capture is usable before opening a PR.**
+
 ## Reference
 
 - Commit that introduced the speculative providers (now reverted): `944d622`
