@@ -33,10 +33,7 @@ final class AppContainer {
             AntigravityProvider(),
             DevinProvider(),
             GrokProvider(),
-            ZaiProvider(),
-            MiniMaxComProvider(),
-            MiniMaxIoProvider(),
-            MiniMaxPlatformProvider()
+            ZaiProvider()
         ]
         let registry = WidgetRegistry.from(providers)
         let enablement = ProviderEnablementStore()
