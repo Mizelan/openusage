@@ -2,6 +2,53 @@
 
 Track your AI coding subscriptions from the macOS menu bar — native Swift edition.
 
+## At a glance
+
+A SwiftPM menu-bar app that reads the credentials already on your Mac and shows subscription usage for Antigravity, Claude, Codex, Cursor, Devin, and Grok.
+
+**Features**
+
+- Provider-grouped meters with reset countdowns, pace indicators, and spend.
+- Menu-bar pins (up to 2 metrics per provider), compact text or mini bars.
+- Dashboard popover with pin/hide, used⟷left, and countdown⟷exact reset controls.
+- Global shortcut, launch at login, theme/density/time-format settings.
+- Loopback JSON API at `127.0.0.1:6736` (`/v1/usage`) for other apps.
+- SOCKS5/HTTP(S) proxy support via `~/.openusage/config.json`; 5-minute refresh with stale-while-revalidate.
+- Signed, notarized Sparkle updates with an Early Access channel.
+
+**Tools**
+
+| Tool | What it does |
+| --- | --- |
+| `swift build` | Debug build of the SwiftPM executable |
+| `swift test` | Run the test suite |
+| `script/build_and_run.sh` | Build and launch the dev app from `dist/` without installing |
+| `script/release.sh` | Release build/sign/notarize helper |
+| `script/compile_icon.sh` | Compile the app icon |
+| `script/embed_sparkle.sh` | Embed Sparkle into the app bundle |
+| `script/apply_github_protections.sh` | Apply repository branch protections |
+| `.github/workflows/release.yml` | Tag-driven release pipeline (`v*`) |
+
+**Layout**
+
+| Path | Contents |
+| --- | --- |
+| `Sources/OpenUsage/App/` | App lifecycle and status item |
+| `Sources/OpenUsage/Providers/` | Per-provider adapters |
+| `Sources/OpenUsage/Views/`, `Models/`, `Stores/` | SwiftUI views and state |
+| `Sources/OpenUsage/Services/`, `Support/` | HTTP API, proxy, updates, utilities |
+| `Tests/OpenUsageTests/` | Swift tests |
+| `docs/` | Architecture, providers, API, settings, release docs |
+| `script/` | Build and release scripts |
+
+**Run**
+
+```bash
+swift build            # debug build
+swift test             # test suite
+./script/build_and_run.sh   # build and launch the dev app from dist/
+```
+
 OpenUsage shows how much of your AI coding plans you've used: session and weekly limits, credits, and spend, all in one popover. Pin your most important metrics straight into the menu bar.
 
 <p align="center">
